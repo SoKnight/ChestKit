@@ -1,0 +1,34 @@
+name: ChestKit
+main: ru.soknight.chestkit.ChestKit
+author: SoKnight
+version: ${project.version}
+api-version: 1.14
+commands:
+  kit:
+    description: Get kit
+    usage: /kit <name>
+  kits:
+    description: View available kits
+    usage: /kits (player)
+  chestkit:
+    description: Reload configuration
+    usage: /chestkit
+permissions:
+  kits.use:
+    description: Allows use kit command
+    default: true
+  kits.use.bypass:
+    description: Allows bypass cooldown of kit
+    default: op
+  kits.use.other:
+    description: Allows give kits to other players
+    default: op
+  kits.list:
+    description: Allows use kits command
+    default: true
+  kits.list.other:
+    description: Allows get info about players available kits
+    default: op
+  kits.reload:
+    description: Allows use reload command
+    default: op

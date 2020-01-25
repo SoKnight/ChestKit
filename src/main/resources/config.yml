@@ -1,0 +1,132 @@
+#  +------------------------------------------------------------------------+
+#  |    _____   _   _   _____   _____   _____      _   _   _____   _____    |
+#  |   |  ___| | | | | |  ___| /  ___\ |_   _|    | | | | |_   _| |_   _|   |
+#  |   | |     | |_| | | |___  | |___    | |      | |/ /    | |     | |     |
+#  |   | |     |  _  | |  ___| |___  |   | |      |   |     | |     | |     |
+#  |   | |___  | | | | | |___   ___| |   | |      | |\ \   _| |_    | |     |
+#  |   |_____| |_| |_| |_____| \_____/   |_|      |_| \_\ |_____|   |_|     |
+#  |                                                                        |                                                                         |
+#  |   Author: SoKnight                                    Version: 1.0.0   |
+#  +------------------------------------------------------------------------+
+#
+# Configuration of database
+database:
+  # Database types: [mysql, sqlite]
+  type: sqlite
+  # MySQL configuration
+  host: localhost
+  port: 3306
+  name: playerdata
+  user: admin
+  password: chestkit
+  # SQLite configuration
+  file: playerdata.db
+
+# Chat messages configuration
+chat-messages:
+  # Send message when player open kit interface
+  send-on-open: true
+  # Use color prefixes in kits list
+  colored-list: true
+  # Enable hoverable kits names in '/kits' list
+  hoverable-list: true
+
+# Configuration of date formating
+date-formating:
+  # Date units formats
+  years: '%y% г.'
+  months: '%M% мес.'
+  weeks: '%w% нед.'
+  days: '%d% д.'
+  hours: '%H% ч.'
+  minutes: '%m% мин.'
+  # Separator between two time units in string
+  separator: ' '
+
+# Time in ticks before kit interface viewing (20 ticks = 1 second)
+time-before-viewing: 60
+
+# Separator between entries
+list-separator: ', '
+
+# Configuration of list entries
+list-entries:
+  # For available kit in list
+  available:
+    # Text in message
+    color: GREEN
+    # Font configuration (not required). By default all is on 'false' value.
+    bold: false
+    italic: false
+    strikethrough: false
+    underlined: true
+    # Hover text for entry
+    # Set 'false' value to use-hover to disable it; not required, by default it is true
+    use-hover: true
+    # Available %kit% placeholder for kit displayname and %id% for ID
+    hover: " &aЭтот набор доступен вам \n &fВведите /kit %id%, чтобы получить. "
+  # For cooldowned kit in list
+  cooldowned:
+    color: AQUA
+    italic: true
+    hover: " &bЭтот набор временно недоступен вам \n &fНабор будет доступен вам через: %time% "
+  # For single received kit in list
+  single:
+    color: RED
+    hover: " &cЭтот набор недоступен вам \n &fОн доступен однажды и вы его уже получили. "
+  # For unavailable kit in list
+  unavailable:
+    color: RED
+    hover: " &cЭтот набор недоступен вам \n &fОн предназначен для игроков с привилегиями выше. "
+
+# Configuration of kit item
+item:
+  # Name of item
+  name: '&7Ящик с набором'
+  # Lore of item
+  lore:
+  - ' '
+  - ' &fСодержит набор: &b%kit% '
+  - ' &fПолучатель: &b%receiver% '
+  - ' '
+  - ' &fКогда вы закроете ящик, '
+  - ' &fоставшиеся в нём предметы '
+  - ' &fпереместятся в ваш инвентарь, '
+  - ' &fа те, что не поместятся, '
+  - ' &fвыпадут на землю в виде дропа. '
+  - ' &fСам же ящик исчезнет из вашего '
+  - ' &fинвентаря после его открытия. '
+  - ' '
+  - ' &fЧтобы открыть набор, возьмите '
+  - ' &fего в руку и нажмите ПКМ. '
+  - ' '
+  # Material of item
+  material: CHEST
+  # Should item has enchant effect
+  echanted: true
+
+# Configuration of messages
+messages:
+  # Errors
+  error-only-for-players: "&cТолько игрок может использовать данную команду."
+  error-no-permissions: "&cНедостаточно прав."
+  error-player-not-found: "&cИгрок %player% не найден."
+  # Kit
+  kit-failed-not-specified: "&cДопишите набор, который хотите получить. Используйте /kits для просмотра наборов."
+  kit-failed-not-found: "&cНабор %kit% не существует. Используйте /kits для просмотра наборов."
+  kit-failed-full-inventory: "&cОсвободите место в инвентаре и попробуйте снова."
+  kit-failed-full-inventory-other: "&cИнвентарь игрока %player% переполнен."
+  kit-failed-single: "&cДанный набор можно получить только один раз за игру."
+  kit-failed-cooldown: "&cВы сможете снова получить этот набор через: %time%"
+  kit-failed-permission: "&cНедостаточно прав для получения данного набора."
+  kit-received: "&fВы получили ящик с набором &b%kit%&f."
+  kit-received-other: "&fИгрок &b%player% &fполучил ящик набором &b%kit%&f."
+  kit-opened: "&fВы открываете ящик с набором &b%kit%&f...\n&fКогда вы закроете ящик, всё оставшееся в нём выпадет рядом с вами."
+  kit-closed-empty: "&fВы закрыли ящик с набором &b%kit% &fи выкинули его на землю."
+  kit-closed-with-items: "&fВы закрыли ящик с набором &b%kit% &fи выкинули его. Оставшиеся предметы из набора лежат на земле."
+  # Kits
+  kits-list: "&fНаборы: &r%kits%"
+  kits-list-other: "&fНаборы %player%: &r%kits%"
+  kits-empty: "&cНаборы не обнаружены."
+  # Other
+  reloaded-success: "&fChestKit перезагружен."

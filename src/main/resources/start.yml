@@ -1,0 +1,86 @@
+# +-----------------------------------------------+
+# |    Welcome to example kit configuration ;)    |
+# +-----------------------------------------------+
+# |  Slots IDs in interface:                      |
+# |         __ __ __ __ __ __ __ __ __            |
+# |  1 row |0 |1 |2 |3 |4 |5 |6 |7 |8 |           |
+# |         __ __ __ __ __ __ __ __ __            |
+# |  2 row |9 |10|11|12|13|14|15|16|17|           |
+# |         __ __ __ __ __ __ __ __ __            |
+# |  3 row |18|19|20|21|22|23|24|25|26|           |
+# |         __ __ __ __ __ __ __ __ __            |
+# |  4 row |27|28|29|30|31|32|33|34|35|           |
+# |         __ __ __ __ __ __ __ __ __            |
+# |  5 row |36|37|38|39|40|41|42|43|44|           |
+# |         __ __ __ __ __ __ __ __ __            |
+# |  6 row |45|46|47|48|49|50|51|52|53|           |
+# |                                               |
+# +-----------------------------------------------+
+#  Useful links:
+#  - Available materials: https://hub.spigotmc.org/javadocs/spigot/org/bukkit/Material.html
+#  - Available enchantments: https://hub.spigotmc.org/javadocs/spigot/org/bukkit/enchantments/Enchantment.html
+#
+#  Available parameters for item (required parameters marked *):
+#  - name: 'Stone'
+#  - lore: 'Just stone'
+#  - material*: stone (see available enchantments above)
+#  - count: 16 (default: 1)
+#  - slot*: 13 (or 'slots', see below)
+#  - slots*: [12,13,14] (if 'slot' parameter is not specified)
+#  - enchantments: [durability;3,arrow_damage;10] (see available enchantments above)
+#  - potion: false (if 'material' is really potion)
+#  - potion-effects: [regen;2;120,strength;5;120]
+# 
+# ID of kit
+# (?) Uses in /kit <id>
+id: start
+# Displayname of kit
+# (?) It is kit name in kits list
+displayname: 'Стартовый'
+# Delay of kit (in minutes)
+delay: 10
+# Single kit
+single: false
+# Should kit require permission
+permission-required: true
+# Permission for kit
+permission: 'group.default'
+# Interface (GUI) configuration
+interface:
+  # Title of interface
+  # (?) When player open this kit he see title of GUI
+  title: "&8Набор 'Стартовый'"
+  # Rows count in interface
+  rows: 4
+# Kit content
+# (?) See available parameters above
+content:
+  stone:
+    name: '&bПросто камень :)'
+    lore:
+    - ' '
+    - ' &fАбсолютно ненужная подпись.. '
+    - ' '
+    material: stone
+    count: 16
+    # ID of slot for item (see above)
+    slot: 13
+    # List of enchantments with syntax:
+    # enchantment;level
+    # Supports unsafe enchantments levels, for example: Unbreaking X (10 level)
+    enchantments:
+    - 'durability;3'
+  potion:
+    name: '&bPower potion 2000'
+    lore:
+    - ' '
+    - ' &fДаст выпившему небывалую силу '
+    - ' '
+    material: potion
+    slots: [21,22,23]
+    # List of potion effects with syntax:
+    # effect;power;duration (in seconds)
+    # Supports unsafe potion effects levels
+    potion-effects:
+    - 'regeneration;2;120'
+    - 'increase_damage;5;120'
