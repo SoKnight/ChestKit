@@ -42,7 +42,7 @@ public class Kits {
         	folder.mkdirs();
         	
         	File example = new File(folder, "start.yml");
-        	try { 
+        	try {
                 Files.copy(instance.getResource("start.yml"), example.toPath(), StandardCopyOption.REPLACE_EXISTING);
                 Logger.info("Generated new kits folder with kit example.");
             } catch (IOException e) { e.printStackTrace(); }
@@ -79,6 +79,7 @@ public class Kits {
     		long delay = config.getLong("delay", 1);
     		boolean single = config.getBoolean("single", false);
     	    boolean permreq = config.getBoolean("permission-required", false);
+    	    boolean openable = config.getBoolean("openable", true);
     	    String permission = config.getString("permission", "chestkit.kit." + id);
     		String title = getColoredString(config, "interface.title", displayname);
     	    int rows = config.getInt("interface.rows", 6);
@@ -89,6 +90,7 @@ public class Kits {
     	    kit.setSingle(single);
     	    kit.setPermreq(permreq);
     	    kit.setPermission(permission);
+    	    kit.setOpenable(openable);
     	    kit.setTitle(title);
     	    kit.setRows(rows);
     	    
@@ -105,8 +107,18 @@ public class Kits {
     	    item.setItemMeta(meta);
     	    kit.setItem(item);
     	    
-    	    ConfigurationSection content = config.getConfigurationSection("content");
-    	    kit = loadItems(content, kit);
+    	    if(openable && config.contains("content")) {
+    	    	ConfigurationSection content = config.getConfigurationSection("content");
+    	    	kit = loadItems(content, kit);
+    	    }
+    	    
+    	    if(config.contains("money-giving")) {
+    	    	ConfigurationSection money = config.getConfigurationSection("money-giving");
+    	    	kit.setDollars((float) money.getDouble("dollars", 0));
+    	    	kit.setEuro((float) money.getDouble("euro", 0));
+    	    	kit.setMoneyless(false);
+    	    } else kit.setMoneyless(true);
+    	    
     	    kits.put(id, kit);
     	    counter++;
     	}

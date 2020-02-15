@@ -1,6 +1,7 @@
 package ru.soknight.chestkit.utils;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -18,21 +19,20 @@ import ru.soknight.chestkit.files.Kits;
 public class KitsListConstructor {
 	
 	public static String newStringList(Player p, Map<String, Long> kits) {
-		Set<String> allkits = Kits.kits.keySet();
+		Collection<Kit> allkits = Kits.kits.values();
 		if(allkits.isEmpty()) return null;
 		
 		String separator = Config.getString("list-separator").replace("&", "\u00A7");
 		String output = "";
 		
-		for(String k : allkits) {
-			Kit kit = Kits.kits.get(k);
+		for(Kit kit : allkits) {
 			String text = kit.getDisplayname();
 			
 			State state = State.AVAILABLE;
-			if(kits.containsKey(k))
-				if(kit.isSingle()) state = State.SINGLE;
-				else {
-					long remained = Utils.getCooldown(kits.get(k), kit.getDelay());
+			if(kits.containsKey(kit.getId()))
+				if(kit.isSingle() && !p.hasPermission("kits.use.single")) state = State.SINGLE;
+				else if(!kit.isSingle()) {
+					long remained = Utils.getCooldown(kits.get(kit.getId()), kit.getDelay());
 					if(remained != 0) state = State.COOLDOWNED;
 				}
 			if(state.equals(State.AVAILABLE) && kit.isPermreq() && !p.hasPermission(kit.getPermission()))
@@ -60,8 +60,8 @@ public class KitsListConstructor {
 			State state = State.AVAILABLE;
 			long remained = 0;
 			if(kits.containsKey(k))
-				if(kit.isSingle()) state = State.SINGLE;
-				else {
+				if(kit.isSingle() && !p.hasPermission("kits.use.single")) state = State.SINGLE;
+				else if(!kit.isSingle()) {
 					remained = Utils.getCooldown(kits.get(k), kit.getDelay());
 					if(remained != 0) state = State.COOLDOWNED;
 				}

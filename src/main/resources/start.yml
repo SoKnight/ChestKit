@@ -41,6 +41,8 @@ displayname: 'Стартовый'
 delay: 10
 # Single kit
 single: false
+# Should kit be openable
+openable: true
 # Should kit require permission
 permission-required: true
 # Permission for kit
@@ -52,6 +54,12 @@ interface:
   title: "&8Набор 'Стартовый'"
   # Rows count in interface
   rows: 4
+# Giving money when kit opened (required PEconomy)
+# If kits parser not find this section, kit will be merked as moneyless
+# This is a FLOATs, you can set 10.5 for example
+money-giving:
+  dollars: 50
+  euro: 10
 # Kit content
 # (?) See available parameters above
 content:

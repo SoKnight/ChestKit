@@ -81,14 +81,29 @@ public class DatabaseManager {
 		}
 	}
 	 
+	/**
+	 * Checking data exist in database
+	 * @param name - name of player
+	 * @return Exist data of player in database or not
+	 */
 	public static boolean isExist(String name) {
 		return data.containsKey(name);
 	}
 	
+	/**
+	 * Getting exist or new data of target player
+	 * @param name - name of player
+	 * @return Exist or new data of player
+	 */
 	public static PlayerInfo getData(String name) {
 		return data.containsKey(name) ? data.get(name) : new PlayerInfo(name);
 	}
 	
+	/**
+	 * Refresh data of player
+	 * @param name - name of player
+	 * @param data - data of player
+	 */
 	public static void setData(String name, PlayerInfo data) {
 		DatabaseManager.data.put(name, data);
 	}

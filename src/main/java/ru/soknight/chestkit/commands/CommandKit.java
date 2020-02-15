@@ -81,7 +81,7 @@ public class CommandKit implements CommandExecutor, TabCompleter {
 		
 		// Checking for cooldown
 		if(!byadmin && !p.hasPermission("kits.use.bypass") && unit.getKits().containsKey(id)) {
-			if(kit.isSingle()) {
+			if(kit.isSingle() && !p.hasPermission("kits.use.single")) {
 				p.sendMessage(Config.getMessage("kit-failed-single"));
 				return true;
 			} else {

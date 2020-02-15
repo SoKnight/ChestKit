@@ -10,9 +10,10 @@ public class Kit {
 
 	private final String id;
 	private String displayname, permission, title;
-	private boolean single, permreq;
+	private boolean single, permreq, openable, moneyless;
 	private long delay;
 	private int rows;
+	private float dollars = 0, euro = 0;
 	private Inventory content;
 	private ItemStack item;
 	

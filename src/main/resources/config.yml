@@ -6,8 +6,26 @@
 #  |   | |___  | | | | | |___   ___| |   | |      | |\ \   _| |_    | |     |
 #  |   |_____| |_| |_| |_____| \_____/   |_|      |_| \_\ |_____|   |_|     |
 #  |                                                                        |                                                                         |
-#  |   Author: SoKnight                                    Version: 1.0.0   |
+#  |   Author: SoKnight                                    Version: 1.1.0   |
 #  +------------------------------------------------------------------------+
+#
+# List of available placeholders see below, replace ID in placeholders to id of target kit.
+# Kit state values: [available, cooldowned, single, unavailable]
+#
+# +--[Placeholder]------------+--[Description]---------------------------------------+--[Data type]-----+
+# | %chestkit_ID_moneyless%   | Kit money less of not                                | true/false       |
+# | %chestkit_ID_single%      | Kit is single or not                                 | true/false       |
+# | %chestkit_ID_openable%    | Kit is openable or not                               | true/false       |
+# | %chestkit_ID_permreq%     | Kit is permission required or not                    | true/false       |
+# | %chestkit_ID_received%    | Kit has been received by player or not               | true/false       |
+# | %chestkit_ID_state%       | Kit state for player (see values above)              | string value     |
+# | %chestkit_ID_permission%  | Needed permission for kit getting                    | string value     |
+# | %ckestkit_ID_displayname% | Displayname of kit                                   | string value     |
+# | %chestkit_ID_cooldown%    | Cooldown of kit for player (in minutes, default - 0) | integer value    |
+# | %chestkit_ID_delay%       | Default cooldown of kit (in minutes)                 | integer value    |
+# | %chestkit_ID_dollars%     | Dollars which kit contain (default - 0)              | 0.00 float value |
+# | %chestkit_ID_euro%        | Euro which kit contain (default - 0)                 | 0.00 float value |
+# +---------------------------+------------------------------------------------------+------------------+
 #
 # Configuration of database
 database:
@@ -30,6 +48,16 @@ chat-messages:
   colored-list: true
   # Enable hoverable kits names in '/kits' list
   hoverable-list: true
+
+# PEconomy balance actions configuration
+peconomy:
+  # Should plugin send message about adding dollars
+  dollars-message: true
+  # Should plugin send message about adding euro
+  euro-message: true
+
+# Should plugin hook own placeholders to PlaceholdersAPI plugin
+hook-papi: true
 
 # Configuration of date formating
 date-formating:
@@ -91,13 +119,11 @@ item:
   - ' '
   - ' &fКогда вы закроете ящик, '
   - ' &fоставшиеся в нём предметы '
-  - ' &fпереместятся в ваш инвентарь, '
-  - ' &fа те, что не поместятся, '
   - ' &fвыпадут на землю в виде дропа. '
   - ' &fСам же ящик исчезнет из вашего '
   - ' &fинвентаря после его открытия. '
   - ' '
-  - ' &fЧтобы открыть набор, возьмите '
+  - ' &fЧтобы открыть ящик, возьмите '
   - ' &fего в руку и нажмите ПКМ. '
   - ' '
   # Material of item
@@ -130,3 +156,5 @@ messages:
   kits-empty: "&cНаборы не обнаружены."
   # Other
   reloaded-success: "&fChestKit перезагружен."
+  dollars-founded: "&fВы нашли &b%dollars%$ &fв ящике."
+  euro-founded: "&fВы нашли &b%euro%€ &fв ящике."

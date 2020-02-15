@@ -25,27 +25,43 @@ public class ChestKit extends JavaPlugin {
     @Override
 	public void onEnable() {
     	instance = this;
+    	
+    	// Refreshing configs
     	Config.refresh();
     	Kits.refresh();
         
+    	// Database initialization
     	try {
 			database = new Database();
+			DatabaseManager.loadFromDatabase();
 		} catch (Exception e) {
 			Logger.error("Connection to database failed. See stacktrace below.");
 			e.printStackTrace();
 			Bukkit.getPluginManager().disablePlugin(this);
 			return;
 		}
-    	DatabaseManager.loadFromDatabase();
     	
+    	// Commands registration
     	PluginCommand kit = getCommand("kit"), kits = getCommand("kits"), chestkit = getCommand("chestkit");
     	kit.setExecutor(new CommandKit());		kit.setTabCompleter(new CommandKit());
     	kits.setExecutor(new CommandKits());	chestkit.setExecutor(new CommandChestkit());
     	
+    	// Listener registration
     	getServer().getPluginManager().registerEvents(new ItemUseListener(), this);
+    	
+    	// Try hook into PAPI
+    	if(Config.getBoolean("hook-papi")) hookIntoPapi();
     	
         Logger.info("Enabled!");
     }
+    
+    private void hookIntoPapi() {
+		if(Bukkit.getPluginManager().getPlugin("PlaceholderAPI") != null) {
+            boolean hooked = new ChestKitExpansion(this).register();
+            if(hooked) Logger.info("Hooked into PlaceholdersAPI.");
+            else Logger.warn("Hooking to PlaceholdersAPI failed, may be expansion already registered.");
+		} else Logger.info("PlaceholdersAPI not found, hooking cancelled.");
+	}
     
     @Override
 	public void onDisable() {

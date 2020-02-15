@@ -2,7 +2,8 @@ name: ChestKit
 main: ru.soknight.chestkit.ChestKit
 author: SoKnight
 version: ${project.version}
-api-version: 1.14
+softdepend: [PEconomy, PlaceholdersAPI]
+api-version: 1.15
 commands:
   kit:
     description: Get kit
@@ -19,6 +20,9 @@ permissions:
     default: true
   kits.use.bypass:
     description: Allows bypass cooldown of kit
+    default: op
+  kits.use.single:
+    description: Allows bypass single restriction
     default: op
   kits.use.other:
     description: Allows give kits to other players

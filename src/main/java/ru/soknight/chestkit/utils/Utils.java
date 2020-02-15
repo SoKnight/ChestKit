@@ -17,6 +17,7 @@ public class Utils {
 	}
 	
 	public static long getCooldown(long kit, long delay) {
+		if((Long) delay == null) delay = 0;
 		long current = System.currentTimeMillis() / 60000;
 		
 		long passed = current - (kit / 60000);
