@@ -1,6 +1,5 @@
 package ru.soknight.chestkit.listeners;
 
-import java.text.DecimalFormat;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -24,34 +23,52 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import ru.soknight.chestkit.ChestKit;
 import ru.soknight.chestkit.commands.CommandKit;
-import ru.soknight.chestkit.commands.CommandKit.KitInfo;
-import ru.soknight.chestkit.files.Config;
-import ru.soknight.chestkit.files.Kit;
-import ru.soknight.chestkit.utils.Logger;
+import ru.soknight.chestkit.commands.CommandKit.ReceivedKit;
+import ru.soknight.chestkit.configuration.Config;
+import ru.soknight.chestkit.configuration.KitInstance;
+import ru.soknight.lib.configuration.Messages;
 import ru.soknight.peconomy.PEcoAPI;
+import ru.soknight.peconomy.PEconomy;
+import ru.soknight.peconomy.command.tool.AmountFormatter;
+import ru.soknight.peconomy.configuration.CurrencyInstance;
+import ru.soknight.peconomy.database.Wallet;
 
-public class ItemUseListener implements Listener {
+@AllArgsConstructor
+public class KitOpenListener implements Listener {
 
 	private static Map<InventoryView, String> views = new HashMap<>();
-	private static DecimalFormat df = new DecimalFormat("#0.00");
+	
+	private final ChestKit plugin;
+	private final Messages messages;
+	
+	private final int delay;
+	
+	public KitOpenListener(ChestKit plugin, Config config, Messages messages) {
+		this.plugin = plugin;
+		this.messages = messages;
+		
+		this.delay = config.getInt("time-before-viewing");
+	}
 	
 	@EventHandler
 	public void onClick(PlayerInteractEvent e) {
 		Action action = e.getAction();
 		if(!action.equals(Action.RIGHT_CLICK_AIR) && !action.equals(Action.RIGHT_CLICK_BLOCK)) return;
 		
+		if(!e.getHand().equals(EquipmentSlot.HAND)) return;
+		
 		ItemStack item = e.getItem();
 		if(item == null) return;
 		
-		if(!e.getHand().equals(EquipmentSlot.HAND)) return;
-		if(!CommandKit.items.containsKey(item)) return;
+		if(!CommandKit.getCache().containsKey(item)) return;
 		
 		Player p = e.getPlayer();
-		KitInfo info = CommandKit.items.get(item);
-		CommandKit.items.remove(item);
+		ReceivedKit info = CommandKit.getCache().get(item);
+		CommandKit.getCache().remove(item);
 		
-		Kit kit = info.getKit();
-		p.sendMessage(Config.getMessage("kit-opened").replace("%kit%", kit.getDisplayname()));
+		KitInstance kit = info.getKit();
+		
+		messages.sendFormatted(p, "kit.opened", "%kit%", kit.getDisplayname());
 		
 		PlayerInventory pinv = p.getInventory();
 		if(pinv.contains(item)) pinv.remove(item);
@@ -61,16 +78,21 @@ public class ItemUseListener implements Listener {
 			Inventory newinv = Bukkit.createInventory(p, kit.getRows() * 9, kit.getTitle());
 			newinv.setContents(inventory.getContents().clone());
 		
-			Bukkit.getScheduler().scheduleSyncDelayedTask(ChestKit.getInstance(), () -> {
+			Bukkit.getScheduler().scheduleSyncDelayedTask(plugin, () -> {
 				if(p != null) {
 					InventoryView view = p.openInventory(newinv);
-					if(!kit.isMoneyless()) sendMoney(kit, p);
 					views.put(view, kit.getDisplayname());
+					
+					if(!kit.isMoneyless())
+						sendMoney(kit, p);
 				}
-			}, Config.getInt("time-before-viewing"));
+			}, delay);
 		} else {
-			if(!kit.isMoneyless()) sendMoney(kit, p);
-			p.sendMessage(Config.getMessage("kit-closed-empty").replace("%kit%", kit.getDisplayname()));
+			Bukkit.getScheduler().scheduleSyncDelayedTask(plugin, () -> {
+				if(!kit.isMoneyless())
+					sendMoney(kit, p);
+				messages.sendFormatted(p, "kit.closed.empty", "%kit%", kit.getDisplayname());
+			}, delay);
 		}
 		
 	}
@@ -86,39 +108,43 @@ public class ItemUseListener implements Listener {
 		String name = views.get(view);
 		views.remove(view);
 		
-		if(inventoryIsEmpty(inventory)) {
-			p.sendMessage(Config.getMessage("kit-closed-empty").replace("%kit%", name));
-		} else {
+		if(inventoryIsEmpty(inventory))
+			messages.sendFormatted(p, "kit.closed.empty", "%kit%", name);
+		else {
 			Location location = p.getLocation();
 			World world = location.getWorld();
 			
-			for(ItemStack i : content) if(i != null) world.dropItem(location, i);
+			for(ItemStack i : content)
+				if(i != null) world.dropItem(location, i);
 			
-			p.sendMessage(Config.getMessage("kit-closed-with-items").replace("%kit%", name));
+			messages.sendFormatted(p, "kit.closed.with-items", "%kit%", name);
 		}
 	}
 	
-	private void sendMoney(Kit kit, Player p) {
+	private void sendMoney(KitInstance kit, Player p) {
 		String name = p.getName();
-		float dollars = kit.getDollars(), euro = kit.getEuro();
-		if(Bukkit.getPluginManager().getPlugin("PEconomy") == null) {
-			Logger.error("Couldn't give money to " + name + " for kit opening: Plugin PEconomy not found.");
-			return; }
 		
-		if(dollars != 0) {
-			PEcoAPI.addAmount(name, dollars, "dollars");
-			if(Config.getBoolean("peconomy.dollars-message")) {
-				String message = Config.getMessage("dollars-founded").replace("%dollars%", df.format(dollars));
-				p.sendMessage(message);
-			}
+		if(Bukkit.getPluginManager().getPlugin("PEconomy") == null) {
+			plugin.getLogger().severe("Failed to give money to " + name + ": PEconomy plugin not found.");
+			return;
 		}
-		if(euro != 0) {
-			PEcoAPI.addAmount(name, euro, "euro");
-			if(Config.getBoolean("peconomy.euro-message")) {
-				String message = Config.getMessage("euro-founded").replace("%euro%", df.format(euro));
-				p.sendMessage(message);
-			}
-		}
+		
+		PEcoAPI api = PEconomy.getAPI();
+		
+		final Wallet wallet = api.hasWallet(name) ? api.getWallet(name) : new Wallet(name);
+		
+		kit.getRewards().forEach((currencyid, amount) -> {
+			CurrencyInstance currency = api.getCurrencyByID(currencyid);
+			if(currency == null) return;
+			
+			wallet.addAmount(currencyid, amount);
+			
+			messages.sendFormatted(p, "kit.reward",
+					"%amount%", AmountFormatter.format(amount),
+					"%currency%", currency.getSymbol());
+		});
+		
+		api.updateWallet(wallet);
 	}
 	
 	private boolean inventoryIsEmpty(Inventory i) {

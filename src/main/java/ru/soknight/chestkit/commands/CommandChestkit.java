@@ -1,24 +1,40 @@
 package ru.soknight.chestkit.commands;
 
-import org.bukkit.command.Command;
-import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
 
-import ru.soknight.chestkit.files.Config;
-import ru.soknight.chestkit.files.Kits;
-import ru.soknight.chestkit.utils.Requirements;
+import ru.soknight.chestkit.ChestKit;
+import ru.soknight.lib.command.ExtendedCommandExecutor;
+import ru.soknight.lib.configuration.Messages;
+import ru.soknight.lib.validation.validator.PermissionValidator;
+import ru.soknight.lib.validation.validator.Validator;
 
-public class CommandChestkit implements CommandExecutor {
+public class CommandChestkit extends ExtendedCommandExecutor {
 
+	private final ChestKit plugin;
+	private final Messages messages;
+	
+	public CommandChestkit(ChestKit plugin, Messages messages) {
+		super(messages);
+		
+		this.plugin = plugin;
+		this.messages = messages;
+		
+		String permmsg = messages.get("error.no-permissions");
+		
+		Validator permval = new PermissionValidator("kits.reload", permmsg);
+		
+		super.addValidators(permval);
+	}
+	
 	@Override
-	public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
-		if(!Requirements.hasPermission(sender, "kits.reload")) return true;
+	public void executeCommand(CommandSender sender, String[] args) {
+		if(!validateExecution(sender, args)) return;
 		
-		Config.refresh();
-		Kits.refresh();
+		plugin.refreshConfigs();
+		plugin.registerCommands();
+		plugin.registerListener();
 		
-		sender.sendMessage(Config.getMessage("reloaded-success"));
-		return true;
+		messages.getAndSend(sender, "reloaded");
 	}
 	
 }

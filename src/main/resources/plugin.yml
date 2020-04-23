@@ -1,13 +1,13 @@
-name: ChestKit
+name: ${project.name}
 main: ru.soknight.chestkit.ChestKit
 author: SoKnight
 version: ${project.version}
 softdepend: [PEconomy, PlaceholdersAPI]
-api-version: 1.15
+api-version: 1.13
 commands:
   kit:
     description: Get kit
-    usage: /kit <name>
+    usage: /kit <kit> (player)
   kits:
     description: View available kits
     usage: /kits (player)

@@ -1,111 +1,71 @@
 package ru.soknight.chestkit.database;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
+import java.io.IOException;
 import java.sql.SQLException;
-import java.sql.Statement;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.logging.Logger;
+
+import com.j256.ormlite.dao.Dao;
+import com.j256.ormlite.dao.DaoManager;
+import com.j256.ormlite.support.ConnectionSource;
 
 import ru.soknight.chestkit.ChestKit;
-import ru.soknight.chestkit.utils.Logger;
 
 public class DatabaseManager {
 	
-    private static Map<String, PlayerInfo> data = new HashMap<>();
+	private final Logger logger;
+	private final ConnectionSource source;
 	
-    public static void loadFromDatabase() {
-    	Database db = ChestKit.getInstance().getDatabase();
-		String query = "SELECT * FROM playerdata;";
-		 
-		try {
-			Connection connection = db.getConnection();
-			Statement statement = connection.createStatement();
-			
-			ResultSet output = statement.executeQuery(query);
-			Logger.info("Loading data from database...");
-			long start = System.currentTimeMillis();
-			while(output.next()) {
-				String name = output.getString("player");
-				String kit = output.getString("kit");
-				long date = output.getLong("date");
-				PlayerInfo unit = getData(name);
-				unit.setKitDate(kit, date);
-				setData(name, unit);
-			}
-			long current = System.currentTimeMillis();
-			Logger.info("Loaded " + data.size() + " entries. Time took: " + (current - start) + " ms.");
-			statement.close();
-			connection.close();
-		} catch (SQLException e) {
-			e.printStackTrace();
-		}
+    private final Dao<ReceiverProfile, String> dao;
+    
+    public DatabaseManager(ChestKit plugin, Database database) throws SQLException {
+		this.logger = plugin.getLogger();
+		this.source = database.getConnection();
+		
+		this.dao = DaoManager.createDao(source, ReceiverProfile.class);
     }
     
-	public static void saveToDatabase() {
-		if(data.isEmpty()) return;
-		 
-		Database db = ChestKit.getInstance().getDatabase();
-		String query = "INSERT INTO playerdata (player, kit, date) VALUES (?, ?, ?);";
-		
+    public void shutdown() {
 		try {
-			Connection connection = db.getConnection();
-			Statement statement = connection.createStatement();
-			
-			statement.executeUpdate("DELETE FROM playerdata;");
-			statement.close();
-			
-			PreparedStatement stm = connection.prepareStatement(query);
-			
-			for(String name : data.keySet()) {
-				PlayerInfo u = data.get(name);
-				Map<String, Long> kits = u.getKits();
-				if(kits.isEmpty()) continue;
-				
-				for(String kit : kits.keySet()) {
-					stm.setString(1, name);
-					stm.setString(2, kit);
-					stm.setLong(3, kits.get(kit));
-					stm.execute();
-					stm.clearParameters();
-				}
-			}
-			
-			Logger.info(data.size() + " entries saved to database.");
-			data.clear();
-			stm.close();
-			connection.close();
-		} catch (SQLException e) {
-			e.printStackTrace();
+			source.close();
+			logger.info("Database connection closed.");
+		} catch (IOException e) {
+			logger.severe("Failed to close database connection: " + e.getLocalizedMessage());
 		}
 	}
-	 
-	/**
-	 * Checking data exist in database
-	 * @param name - name of player
-	 * @return Exist data of player in database or not
-	 */
-	public static boolean isExist(String name) {
-		return data.containsKey(name);
+    
+    /*
+     * Player info
+     */
+    
+    public boolean createProfile(ReceiverProfile profile) {
+    	try {
+			return this.dao.create(profile) != 0;
+		} catch (SQLException e) {
+			logger.severe("Failed to create profile for player '" + profile.getReceiver() + "': " + e.getMessage());
+			return false;
+		}
+    }
+	
+	public ReceiverProfile getProfile(String player) {
+		try {
+			return this.dao.queryForId(player);
+		} catch (SQLException e) {
+			logger.severe("Failed to get profile of player '" + player + "': " + e.getMessage());
+			return null;
+		}
 	}
 	
-	/**
-	 * Getting exist or new data of target player
-	 * @param name - name of player
-	 * @return Exist or new data of player
-	 */
-	public static PlayerInfo getData(String name) {
-		return data.containsKey(name) ? data.get(name) : new PlayerInfo(name);
+	public boolean hasProfile(String player) {
+		return getProfile(player) != null;
 	}
 	
-	/**
-	 * Refresh data of player
-	 * @param name - name of player
-	 * @param data - data of player
-	 */
-	public static void setData(String name, PlayerInfo data) {
-		DatabaseManager.data.put(name, data);
+	public boolean updateProfile(ReceiverProfile profile) {
+		try {
+			return this.dao.update(profile) != 0;
+		} catch (SQLException e) {
+			logger.severe("Failed to update profile of player '" + profile.getReceiver() + "': " + e.getMessage());
+			return false;
+		}
 	}
 	
 }

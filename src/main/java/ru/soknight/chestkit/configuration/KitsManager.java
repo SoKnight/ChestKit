@@ -1,6 +1,7 @@
-package ru.soknight.chestkit.files;
+package ru.soknight.chestkit.configuration;
 
 import java.io.File;
+import java.io.FilenameFilter;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
@@ -9,6 +10,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.logging.Logger;
 
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
@@ -24,54 +26,78 @@ import org.bukkit.inventory.meta.PotionMeta;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 
+import lombok.Getter;
 import ru.soknight.chestkit.ChestKit;
-import ru.soknight.chestkit.utils.Logger;
-import ru.soknight.chestkit.utils.Utils;
 
-public class Kits {
+public class KitsManager {
 	
-	private static File folder;
-	public static Map<String, Kit> kits;
-	public static Map<ItemStack, Kit> playerskits;
+	@Getter private Map<String, KitInstance> kits;
+	private final Map<ItemStack, KitInstance> playersKits;
 	
-    public static void refresh() {
-    	ChestKit instance = ChestKit.getInstance();
-    	folder = new File(instance.getDataFolder(), "kits");
+	private final File folder;
+	private final Logger logger;
+	private final Config config;
+	
+	public KitsManager(ChestKit plugin, Config config) {
+		this.folder = new File(plugin.getDataFolder(), "kits");
+		this.logger = plugin.getLogger();
+		this.config = config;
     	
         if(!folder.isDirectory()) {
         	folder.mkdirs();
         	
         	File example = new File(folder, "start.yml");
         	try {
-                Files.copy(instance.getResource("start.yml"), example.toPath(), StandardCopyOption.REPLACE_EXISTING);
-                Logger.info("Generated new kits folder with kit example.");
-            } catch (IOException e) { e.printStackTrace(); }
+                Files.copy(plugin.getResource("start.yml"), example.toPath(), StandardCopyOption.REPLACE_EXISTING);
+                plugin.getLogger().info("Generated new kits folder with example kit.");
+            } catch (IOException e) {
+            	e.printStackTrace();
+            }
         }
-        
-        loadKits();
-    }
+		
+		this.playersKits = new HashMap<>();
+		
+		loadKits();
+	}
+	
+	public KitInstance getLinkedKit(ItemStack item) {
+		return this.playersKits.get(item);
+	}
+	
+	public boolean isLinked(ItemStack item) {
+		return this.playersKits.containsKey(item);
+	}
+	
+	public void linkKit(ItemStack item, KitInstance kit) {
+		this.playersKits.put(item, kit);
+	}
     
-    private static void loadKits() {
-    	kits = new HashMap<>();
+    private void loadKits() {
+    	this.kits = new HashMap<>();
     	
-    	File[] files = folder.listFiles();
+    	File[] files = this.folder.listFiles((FilenameFilter) (dir, name) -> name.endsWith(".yml"));
+    	
     	if(files.length == 0) {
-    		Logger.error("Kits files not found in " + folder.getPath() + ".");
+    		logger.severe("Kits files not found in: " + folder.getPath());
     		return;
     	}
     	
-    	Material material = Material.valueOf(Config.getString("item.material"));
-    	String name = Config.getString("item.name");
-    	List<String> lore = Utils.getColoredList(Config.config, "item.lore");
-    	boolean enchant = Config.getBoolean("item.enchanted");
+    	Material material = Material.valueOf(config.getString("item.material").toUpperCase());
+    	String name = config.getColoredString("item.name");
+    	List<String> lore = config.getColoredList("item.lore");
+    	boolean enchant = config.getBoolean("item.enchanted");
+    	
+    	ItemStack baseItem = new ItemStack(material, 1);
+	    ItemMeta baseItemMeta = baseItem.getItemMeta();
+	    
+	    baseItemMeta.setDisplayName(name);
+	    baseItemMeta.addItemFlags(ItemFlag.HIDE_ENCHANTS, ItemFlag.HIDE_ATTRIBUTES, ItemFlag.HIDE_POTION_EFFECTS);
+	    if(enchant) baseItemMeta.addEnchant(Enchantment.ARROW_INFINITE, 1, true);
+	    
+	    baseItem.setItemMeta(baseItemMeta);
     	
     	int counter = 0;
     	for(File file : files) {
-    		if(!file.getName().endsWith(".yml")) {
-    			Logger.error("File " + file.getName() + " has invalid extension. It must have .yml extension.");
-    			continue;
-    		}
-    		
     		FileConfiguration config = YamlConfiguration.loadConfiguration(file);
     		
     		String id = config.getString("id");
@@ -84,7 +110,7 @@ public class Kits {
     		String title = getColoredString(config, "interface.title", displayname);
     	    int rows = config.getInt("interface.rows", 6);
     	    
-    	    Kit kit = new Kit(id);
+    	    KitInstance kit = new KitInstance(id);
     	    kit.setDisplayname(displayname);
     	    kit.setDelay(delay);
     	    kit.setSingle(single);
@@ -94,15 +120,12 @@ public class Kits {
     	    kit.setTitle(title);
     	    kit.setRows(rows);
     	    
-    	    ItemStack item = new ItemStack(material, 1);
+    	    ItemStack item = baseItem.clone();
     	    ItemMeta meta = item.getItemMeta();
     	    
     	    List<String> customLore = new ArrayList<>();
     	    lore.forEach(s -> customLore.add(s.replace("%kit%", displayname)));
     	    meta.setLore(customLore);
-    	    meta.setDisplayName(name);
-    	    meta.addItemFlags(ItemFlag.HIDE_ENCHANTS, ItemFlag.HIDE_ATTRIBUTES, ItemFlag.HIDE_POTION_EFFECTS);
-    	    if(enchant) meta.addEnchant(Enchantment.ARROW_INFINITE, 1, true);
     	    
     	    item.setItemMeta(meta);
     	    kit.setItem(item);
@@ -114,19 +137,23 @@ public class Kits {
     	    
     	    if(config.contains("money-giving")) {
     	    	ConfigurationSection money = config.getConfigurationSection("money-giving");
-    	    	kit.setDollars((float) money.getDouble("dollars", 0));
-    	    	kit.setEuro((float) money.getDouble("euro", 0));
-    	    	kit.setMoneyless(false);
+    	    	Set<String> currencies = money.getKeys(false);
+    	    	
+    	    	if(currencies != null && !currencies.isEmpty()) {
+    	    		for(String c : currencies)
+    	    			kit.addReward(c, (float) money.getDouble(c, 0));
+    	    		kit.setMoneyless(false);
+    	    	}
     	    } else kit.setMoneyless(true);
     	    
     	    kits.put(id, kit);
     	    counter++;
     	}
     	
-    	Logger.info("Loaded " + counter + " kits.");
+    	logger.info("Loaded " + counter + " kits.");
     }
     
-    private static Kit loadItems(ConfigurationSection config, Kit kit) {
+    private KitInstance loadItems(ConfigurationSection config, KitInstance kit) {
     	Set<String> items = config.getKeys(false);
     	
     	Inventory inventory = Bukkit.createInventory(null, kit.getRows() * 9);
@@ -142,8 +169,8 @@ public class Kits {
     		ItemStack item = new ItemStack(material, count);
     		ItemMeta meta = item.getItemMeta();
     		
-    		if(c.isSet("name")) meta.setDisplayName(c.getString("name").replace("&", "\u00A7"));
-    		if(c.isSet("lore")) meta.setLore(Utils.getColoredList(c, "lore"));
+    		if(c.isSet("name")) meta.setDisplayName(getColoredString(config, "name", ""));
+    		if(c.isSet("lore")) meta.setLore(getColoredList(c, "lore"));
     		
     		if(c.isSet("enchantments")) {
     			List<String> enchs = c.getStringList("enchantments");
@@ -194,8 +221,17 @@ public class Kits {
     	return kit;
     }
     
-    private static String getColoredString(FileConfiguration config, String path, String def) {
+    private String getColoredString(ConfigurationSection config, String path, String def) {
     	return config.getString(path, def).replace("&", "\u00A7");
     }
+    
+    private List<String> getColoredList(ConfigurationSection config, String path) {
+		List<String> list = config.getStringList(path);
+		if(list.isEmpty()) return list;
+		
+		List<String> colored = new ArrayList<>();
+		for(String s : list) colored.add(s.replace("&", "\u00A7"));
+		return colored;
+	}
 	
 }

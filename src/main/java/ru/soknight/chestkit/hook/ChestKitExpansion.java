@@ -1,24 +1,23 @@
-package ru.soknight.chestkit;
+package ru.soknight.chestkit.hook;
 
-import java.text.DecimalFormat;
-
+import org.bukkit.ChatColor;
 import org.bukkit.entity.Player;
 
 import lombok.AllArgsConstructor;
 import me.clip.placeholderapi.expansion.PlaceholderExpansion;
+import ru.soknight.chestkit.ChestKit;
+import ru.soknight.chestkit.configuration.KitInstance;
+import ru.soknight.chestkit.configuration.KitsListEntry.KitsListEntryState;
+import ru.soknight.chestkit.configuration.KitsManager;
 import ru.soknight.chestkit.database.DatabaseManager;
-import ru.soknight.chestkit.database.PlayerInfo;
-import ru.soknight.chestkit.files.Config.ListEntry.State;
-import ru.soknight.chestkit.files.Kit;
-import ru.soknight.chestkit.files.Kits;
-import ru.soknight.chestkit.utils.Utils;
+import ru.soknight.chestkit.database.ReceiverProfile;
 
 @AllArgsConstructor
 public class ChestKitExpansion extends PlaceholderExpansion {
-
-	private static final DecimalFormat df = new DecimalFormat("#0.00");
 	
-	private ChestKit plugin;
+	private final ChestKit plugin;
+	private final KitsManager kitsManager;
+	private final DatabaseManager databaseManager;
 	
 	@Override
 	public String getAuthor() {
@@ -46,10 +45,11 @@ public class ChestKitExpansion extends PlaceholderExpansion {
         	String kitid = parts[0];
         	String subid = parts[1];
         	
-        	if(!Kits.kits.containsKey(kitid)) return "";
+        	KitInstance kit = kitsManager.getKits().get(kitid);
+        	if(kit == null)
+        		return ChatColor.RED + "UNKNOWN KIT";
             
-            Kit kit = Kits.kits.get(kitid);
-            PlayerInfo info = DatabaseManager.getData(name);
+            ReceiverProfile profile = databaseManager.getProfile(name);
             
         	switch (subid) {
         	case "moneyless": {
@@ -65,18 +65,20 @@ public class ChestKitExpansion extends PlaceholderExpansion {
         		return String.valueOf(kit.isPermreq());
         	}
         	case "received": {
-        		return String.valueOf(info.getKits().containsKey(kitid));
+        		return String.valueOf(profile.getKits().containsKey(kitid));
         	}
         	case "state": {
-        		State state = State.AVAILABLE;
-    			if(info.getKits().containsKey(kit.getId()))
-    				if(kit.isSingle() && !p.hasPermission("kits.use.single")) state = State.SINGLE;
+        		KitsListEntryState state = KitsListEntryState.AVAILABLE;
+    			if(profile.getKits().containsKey(kit.getId()))
+    				if(kit.isSingle() && !p.hasPermission("kits.use.single"))
+    					state = KitsListEntryState.SINGLE;
     				else if(!kit.isSingle()) {
-    					long remained = Utils.getCooldown(info.getKits().get(kit.getId()), kit.getDelay());
-    					if(remained != 0) state = State.COOLDOWNED;
+    					long remained = getCooldown(profile.getKits().get(kit.getId()), kit.getDelay());
+    					if(remained != 0) state = KitsListEntryState.COOLDOWNED;
     				}
-    			if(state.equals(State.AVAILABLE) && kit.isPermreq() && !p.hasPermission(kit.getPermission()))
-    				state = State.UNAVAILABLE;
+    			if(state.equals(KitsListEntryState.AVAILABLE) && kit.isPermreq() && !p.hasPermission(kit.getPermission()))
+    				state = KitsListEntryState.UNAVAILABLE;
+    			
         		return state.toString().toLowerCase();
         	}
         	case "permission": {
@@ -86,16 +88,10 @@ public class ChestKitExpansion extends PlaceholderExpansion {
         		return kit.getDisplayname();
         	}
         	case "cooldown": {
-        		return String.valueOf(Utils.getCooldown(info.getKits().get(kitid), kit.getDelay()));
+        		return String.valueOf(getCooldown(profile.getKits().get(kitid), kit.getDelay()));
         	}
         	case "delay": {
         		return String.valueOf(kit.getDelay());
-        	}
-        	case "dollars": {
-        		return df.format(kit.getDollars());
-        	}
-        	case "euro": {
-        		return df.format(kit.getEuro());
         	}
         	default:
         		break;
@@ -104,5 +100,15 @@ public class ChestKitExpansion extends PlaceholderExpansion {
         
         return null;
     }
+	
+	private long getCooldown(long kit, long delay) {
+		if((Long) delay == null) delay = 0;
+		long current = System.currentTimeMillis() / 60000;
+		
+		long passed = current - kit / 60000;
+		long remained = delay - passed;
+		if(remained < 0) remained = 0;
+		return remained;
+	}
 
 }
